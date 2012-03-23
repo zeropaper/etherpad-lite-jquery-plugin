@@ -1,5 +1,8 @@
 (function( $ ){
-
+  
+  // used to generate unique IDs
+  var padCount = window.__padCount = 0;
+  
   $.fn.pad = function( options ) {
     var settings = {
       'host'              : 'http://beta.etherpad.org',
@@ -21,76 +24,105 @@
     
     var $self = this;
     if (!$self.length) return;
-    if (!$self.attr('id')) throw new Error('No "id" attribute');
+    if (!$self.attr('id')) {
+      $self.attr('id', 'pad-'+ padCount);
+      padCount++;
+    }
     
     var useValue = $self[0].tagName.toLowerCase() == 'textarea';
     var selfId = $self.attr('id');
     var epframeId = 'epframe'+ selfId;
-    // This writes a new frame if required
+    var frameExists = $('#'+ epframeId).length;
+
     if ( !options.getContents ) {
       if ( options ) {
         $.extend( settings, options );
+      }      
+      
+      // This writes a new frame if required
+      if (!frameExists) {
+        var iFrame = '<iframe id="'+epframeId;
+            iFrame = iFrame +'" name="'+epframeId;
+            iFrame = iFrame +'" src="'+settings.host+settings.baseUrl+settings.padId;
+            iFrame = iFrame + '?showControls='+settings.showControls;
+            iFrame = iFrame + '&showChat='+settings.showChat;
+            iFrame = iFrame + '&showLineNumbers='+settings.showLineNumbers;
+            iFrame = iFrame + '&useMonospaceFont='+settings.useMonospaceFont;
+            iFrame = iFrame + '&userName=' + settings.userName;
+            iFrame = iFrame + '&noColors=' + settings.noColors;
+            iFrame = iFrame + '&hideQRCode=' + settings.hideQRCode;
+            iFrame = iFrame +'" style="border:'+settings.border;
+            iFrame = iFrame +'; border-style:'+settings.borderStyle;
+//            iFrame = iFrame +'; width:'+settings.width;
+//            iFrame = iFrame +'; height:'+settings.height;
+            iFrame = iFrame +';" width="'+ '100%';//settings.width;
+            iFrame = iFrame +'" height="'+ settings.height; 
+            iFrame = iFrame +'"></iframe>';
+        
+        if (useValue) {
+          $self.after(iFrame);
+        }
+        else {
+          $self.html(iFrame);
+        }
       }
       
-      var iFrameLink = '<iframe id="'+epframeId;
-          iFrameLink = iFrameLink +'" name="'+epframeId;
-          iFrameLink = iFrameLink +'" src="'+settings.host+settings.baseUrl+settings.padId;
-          iFrameLink = iFrameLink + '?showControls='+settings.showControls;
-          iFrameLink = iFrameLink + '&showChat='+settings.showChat;
-          iFrameLink = iFrameLink + '&showLineNumbers='+settings.showLineNumbers;
-          iFrameLink = iFrameLink + '&useMonospaceFont='+settings.useMonospaceFont;
-          iFrameLink = iFrameLink + '&userName=' + settings.userName;
-          iFrameLink = iFrameLink + '&noColors=' + settings.noColors;
-          iFrameLink = iFrameLink + '&hideQRCode=' + settings.hideQRCode;
-          iFrameLink = iFrameLink +'" style="border:'+settings.border;
-          iFrameLink = iFrameLink +'; border-style:'+settings.borderStyle;
-//          iFrameLink = iFrameLink +'; width:'+settings.width;
-//          iFrameLink = iFrameLink +'; height:'+settings.height;
-          iFrameLink = iFrameLink +';" width="'+ '100%';//settings.width;
-          iFrameLink = iFrameLink +'" height="'+ settings.height; 
-          iFrameLink = iFrameLink +'"></iframe>';
-      
-      
-      var $iFrameLink = $(iFrameLink);
-      
+      var $iFrame = $('#'+ epframeId);
+
       if (useValue) {
-        var $toggleLink = $('<a href="#'+ selfId +'">'+ settings.toggleTextOn +'</a>').click(function(){
-          var $this = $(this);
-          $this.toggleClass('active');
-          if ($this.hasClass('active')) $this.text(settings.toggleTextOff);
-          $self.pad({getContents: true});
-          return false;
-        });
-        $self
-          .hide()
-          .after($toggleLink)
-          .after($iFrameLink)
-        ;
+
+        if (!$('#'+ selfId +'-toggle').length) {
+          var $toggleLink = $('<a href="#'+ selfId +'" id="'+ selfId +'-toggle">'+ settings.toggleTextOn +'</a>').click(function(){
+            var $this = $(this);
+            $this.toggleClass('active');
+            if ($this.hasClass('active')) $this.text(settings.toggleTextOff);
+            $self.pad({
+              getContents: true,
+              returnValue: true
+            });
+            return false;
+          });
+        
+          $self.after($toggleLink);
+        }
+        
+        $self.hide();
+        
       }
       else {      
-        $self.html(iFrameLink);
+        $self.html(iFrame);
       }
     }
 
     // This reads the etherpad contents if required
     else {
-      var frameUrl = $('#'+ epframeId).attr('src').split('?')[0];
+      var $frame = $('#'+ epframeId).attr('src');
+      if (!$frame) return;
+      
+      var frameUrl = $frame.split('?')[0];
       var contentsUrl = frameUrl + "/export/html";
+      var rawContentsUrl = frameUrl + "/export/html?raw";
 
       // perform an ajax call on contentsUrl and write it to the parent
       $.get(contentsUrl, function(data) {
-        
-        if (useValue) {
-          $self.val(data).show();
+        var $data = $(data);
+        var html = data;
+        if (!settings.returnValue) {
+          if (useValue) {
+            $self.val(html);
+          }
+          else {
+            $self.html(html);
+          }
         }
-        else {
-          $self.html(data);
-        }
-        
-        $('#'+ epframeId).remove();
       });
     }
     
+    if (settings.destroy) {
+      $self.show();
+      $('#'+ epframeId).remove();
+      $('#'+ selfId +'-toggle').remove();
+    }
     
     return $self;
   };
