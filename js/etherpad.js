@@ -2,6 +2,25 @@
   
   // used to generate unique IDs
   var padCount = window.__padCount = 0;
+      
+  /**
+   * Performs AJAX calls to retreive the HTML content of a pad
+   * and puts it into a target
+   */
+  function fetchHTML(frameUrl, $target, cb) {
+    var contentsUrl = frameUrl + "/export/html";
+//    var rawContentsUrl = frameUrl + "/export/html?raw";
+    
+    $.get(contentsUrl, function(data) {
+      var html = data;
+      if ($target[0].nodeName.toLowerCase() == 'textarea') {
+        $target.val(html);
+      }
+      else {
+        $target.html(html);
+      }
+    });
+  }
   
   $.fn.pad = function( options ) {
     var settings = {
@@ -19,11 +38,50 @@
       'border'            : 0,
       'borderStyle'       : 'solid',
       'toggleTextOn'      : 'Disable Rich-text',
-      'toggleTextOff'     : 'Enable Rich-text'
+      'toggleTextOff'     : 'Enable Rich-text',
+      
+      'poll'              : 3000
     };
     
     var $self = this;
     if (!$self.length) return;
+    
+    options = options || (options = {});
+    $.extend( settings, options );
+    if (console) console.info('Settings', settings);
+    
+    if (options.parse) {
+      var context = (typeof options.parse != 'object' ? $('body')[0] : options.parse);
+      
+      $('[data-pad-id]:not(.etherpad-lite-processed)')
+        .addClass('etherpad-lite-processed')
+        .each(function(){
+          var $display = $(this);
+          fetchHTML($display.attr('rel'), $display);
+          if (settings.poll > 500) {
+            $display
+              .data('pad-polling', setInterval(function(){
+                fetchHTML($display.attr('rel'), $display);
+              }, settings.poll))
+              .hover(function(){
+                $display.css('background-color', '#eee');
+                clearInterval($display.data('pad-polling'));
+              }, function(){
+                $display
+                  .css('background-color', 'transparent')
+                  .data('pad-polling', setInterval(function(){
+                    fetchHTML($display.attr('rel'), $display);
+                  }, settings.poll))
+                ;
+              })
+            ;
+          }
+        })
+      ;
+      return;
+    }
+    
+    
     if (!$self.attr('id')) {
       $self.attr('id', 'pad-'+ padCount);
       padCount++;
@@ -35,9 +93,7 @@
     var frameExists = $('#'+ epframeId).length;
 
     if ( !options.getContents ) {
-      if ( options ) {
-        $.extend( settings, options );
-      }      
+//      $.extend( settings, options );
       
       // This writes a new frame if required
       if (!frameExists) {
@@ -98,24 +154,7 @@
     else {
       var $frame = $('#'+ epframeId).attr('src');
       if (!$frame) return;
-      
-      var frameUrl = $frame.split('?')[0];
-      var contentsUrl = frameUrl + "/export/html";
-      var rawContentsUrl = frameUrl + "/export/html?raw";
-
-      // perform an ajax call on contentsUrl and write it to the parent
-      $.get(contentsUrl, function(data) {
-        var $data = $(data);
-        var html = data;
-        if (!settings.returnValue) {
-          if (useValue) {
-            $self.val(html);
-          }
-          else {
-            $self.html(html);
-          }
-        }
-      });
+      fetchHTML($frame.split('?')[0], $self);
     }
     
     if (settings.destroy) {
