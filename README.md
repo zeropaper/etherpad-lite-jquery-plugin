@@ -20,19 +20,31 @@ The Etherpad jQuery Plugin Example plugin easily allows you to add and access a 
 # Available options and parameters
 <pre>
 'host'             : 'http://beta.etherpad.org', // the host and port of the Etherpad instance, by default the foundation will host your pads for you
-'baseUrl'          : '/p/', // The base URL of the pads
-'showControls'     : false, // If you want to show controls IE bold, italic, etc.
-'showChat'         : false, // If you want to show the chat button or not
-'showLineNumbers'  : false, // If you want to show the line numbers or not
+'baseUrl'          : '/p/',     // The base URL of the pads
+'showControls'     : false,     // If you want to show controls IE bold, italic, etc.
+'showChat'         : false,     // If you want to show the chat button or not
+'showLineNumbers'  : false,     // If you want to show the line numbers or not
 'userName'         : 'unnamed', // The username you want to pass to the pad
-'useMonospaceFont' : false, // Use monospaced fonts
-'noColors'         : false, // Disable background colors on author text
-'hideQRCode'       : false, // Hide QR code
-'width'            : 100, // The width of the embedded IFrame
-'height'           : 100,  // The height of the embedded IFrame
-'border'           : 0,    // The width of the border (make sure to append px to a numerical value)
-'borderStyle'      : 'solid' // The CSS style of the border	[none, dotted, dashed, solid, double, groove, ridge, inset, outset]
+'useMonospaceFont' : false,     // Use monospaced fonts
+'noColors'         : false,     // Disable background colors on author text
+'hideQRCode'       : false,     // Hide QR code
+'width'            : 100,       // The width of the embedded IFrame
+'height'           : 100,       // The height of the embedded IFrame
+'border'           : 0,         // The width of the border (make sure to append px to a numerical value)
+'borderStyle'      : 'solid',   // The CSS style of the border	[none, dotted, dashed, solid, double, groove, ridge, inset, outset]
+
+'parse'            : false,     //
+'poll'             : 1000       // Require 'parse' != false, time in milliseconds, if > 300 will refresh the pads found with 'parse'
 </pre>
+
+
+# Use of the 'parse' option
+You can pass either
+
+- **a boolean true**
+  Will scan within the body
+- **a DOM element object**
+  Will scan within the DOM element
 
 # Copyright
 jQuery Etherpad plugin written by John McLear (c) Primary Technology 2011<br/>
